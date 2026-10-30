@@ -1,0 +1,54 @@
+configure terminal
+
+    ! 1. Create VLANs 10 and 20 locally
+    vlan 10
+        name Client-VLAN-10
+    exit
+
+    vlan 20
+        name Client-VLAN-20
+    exit
+
+    ! 2. Configure the Port-Channel uplink to the Aruba VSX Core
+    interface Port-channel 1
+        description Uplink-to-Aruba-VSX-MC-LAG
+        switchport trunk encapsulation dot1q
+        switchport mode trunk
+        no shutdown
+    exit
+
+    ! 3. Assign physical ports Gi0/0 and Gi0/1 to Port-Channel 1
+    interface GigabitEthernet0/0
+        description Link-to-ArubaCX3-Port-1/1/5
+        switchport trunk encapsulation dot1q
+        switchport mode trunk
+        channel-group 1 mode active
+        no shutdown
+    exit
+
+    interface GigabitEthernet0/1
+        description Link-to-ArubaCX7-Port-1/1/5
+        switchport trunk encapsulation dot1q
+        switchport mode trunk
+        channel-group 1 mode active
+        no shutdown
+    exit
+
+    ! 4. Configure Client Access Port for Win5 (VLAN 10)
+    interface GigabitEthernet0/2
+        description Access-to-Win5-VLAN10
+        switchport mode access
+        switchport access vlan 10
+        no shutdown
+    exit
+
+    ! 5. Configure Client Access Port for Win (VLAN 20)
+    interface GigabitEthernet0/3
+        description Access-to-Win-VLAN20
+        switchport mode access
+        switchport access vlan 20
+        no shutdown
+    exit
+
+end
+write memory

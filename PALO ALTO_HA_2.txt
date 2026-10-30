@@ -1,0 +1,151 @@
+*ArubaCX3*
+configure terminal
+
+    ! 1. Create VLAN 10 for the End-User PC and DHCP Traffic
+    vlan 10
+        name Client-VLAN
+    exit
+
+    ! 2. Configure the ISL (Inter-Switch Link) LAG using ports 1/1/3 and 1/1/4
+    interface lag 128
+        description VSX-ISL
+        no shutdown
+        no routing
+        vlan trunk allowed all
+        lacp mode active
+    exit
+
+    interface 1/1/3-1/1/4
+        no shutdown
+        lag 128
+    exit
+
+    ! 3. Configure the VSX Keepalive Link (Direct Layer 3 Link between switches)
+    interface 1/1/2
+        description VSX-Keepalive
+        no shutdown
+        ip address 192.168.255.1/30
+    exit
+
+    ! 4. Enable VSX Global Settings and Sync
+    vsx
+        inter-switch-link lag 128
+        role primary
+        keepalive peer 192.168.255.2 source 192.168.255.1
+        vsx-sync vsx-global mclag-interfaces stp-global vlans static-routes
+    exit
+
+    ! 5. Configure MC-LAG for the Firewalls (Port 1/1/1)
+    interface lag 1 multi-chassis
+        description MC-LAG-to-Firewalls
+        no shutdown
+        no routing
+        vlan trunk allowed all
+        lacp mode active
+    exit
+
+    interface 1/1/1
+        no shutdown
+        lag 1
+    exit
+
+    ! 6. Configure MC-LAG for the Patch Panel / Client Access (Port 1/1/5)[cite: 15]
+    interface lag 2 multi-chassis
+        description MC-LAG-to-Patch-Panel
+        no shutdown
+        no routing
+        vlan access 10
+        lacp mode active
+    exit
+
+    interface 1/1/5
+        no shutdown
+        lag 2
+    exit
+
+    ! 7. Configure Active Gateway and DHCP Relay (IP Helper) on VLAN 10
+    interface vlan 10
+        no shutdown
+        ip address 10.10.10.2/24
+        active-gateway ip 10.10.10.1 mac 00:00:00:00:01:01
+        ip helper-address 10.10.10.1
+    exit
+
+end
+write memory
+
+*ArubaCX7*
+configure terminal
+
+    ! 1. Create VLAN 10
+    vlan 10
+        name Client-VLAN
+    exit
+
+    ! 2. Configure the ISL (Inter-Switch Link) LAG using ports 1/1/3 and 1/1/4
+    interface lag 128
+        description VSX-ISL
+        no shutdown
+        no routing
+        vlan trunk allowed all
+        lacp mode active
+    exit
+
+    interface 1/1/3-1/1/4
+        no shutdown
+        lag 128
+    exit
+
+    ! 3. Configure the VSX Keepalive Link
+    interface 1/1/2
+        description VSX-Keepalive
+        no shutdown
+        ip address 192.168.255.2/30
+    exit
+
+    ! 4. Enable VSX Global Settings and Sync (Role is Secondary)
+    vsx
+        inter-switch-link lag 128
+        role secondary
+        keepalive peer 192.168.255.1 source 192.168.255.2
+        vsx-sync vsx-global mclag-interfaces stp-global vlans static-routes
+    exit
+
+    ! 5. Configure MC-LAG for the Firewalls (Port 1/1/1)
+    interface lag 1 multi-chassis
+        description MC-LAG-to-Firewalls
+        no shutdown
+        no routing
+        vlan trunk allowed all
+        lacp mode active
+    exit
+
+    interface 1/1/1
+        no shutdown
+        lag 1
+    exit
+
+    ! 6. Configure MC-LAG for the Patch Panel / Client Access (Port 1/1/5)[cite: 15]
+    interface lag 2 multi-chassis
+        description MC-LAG-to-Patch-Panel
+        no shutdown
+        no routing
+        vlan access 10
+        lacp mode active
+    exit
+
+    interface 1/1/5
+        no shutdown
+        lag 2
+    exit
+
+    ! 7. Configure Active Gateway and DHCP Relay (IP Helper) on VLAN 10
+    interface vlan 10
+        no shutdown
+        ip address 10.10.10.3/24
+        active-gateway ip 10.10.10.1 mac 00:00:00:00:01:01
+        ip helper-address 10.10.10.1
+    exit
+
+end
+write memory

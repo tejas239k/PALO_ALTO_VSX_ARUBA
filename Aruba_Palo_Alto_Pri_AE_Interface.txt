@@ -1,0 +1,63 @@
+To configure the Aggregate Interface (ae1) and its Subinterfaces (ae1.10 and ae1.20) on your Palo Alto firewall via the GUI, aligned with your new multi-VLAN topology (where VLAN 10 and VLAN 20 are trunked from the switches directly up to the firewall for inter-VLAN routing and security inspection), follow these step-by-step instructions.
+
+
+Step 1: Create the Aggregate Interface (ae1)
+Log in to the Palo Alto Firewall Web GUI.
+Go to the Network tab at the top.
+In the left-hand menu, select Interface Types > Aggregate Ethernet.
+Click Add in the bottom-left corner to create a new aggregate interface.
+Interface Name: Type ae1.
+Comment: Enter a descriptive label (e.g., MC-LAG-to-Aruba-Core).
+Go to the Config tab:
+Interface Type: Select Layer3.
+Go to the LACP tab (to match the LACP active settings on your Aruba switches):
+Check Enable.
+Mode: Select active.
+Transmission Rate: Select slow or fast (ensure it matches your preference, typically slow is standard).
+(Optional for HA pairs) Check Use Same System MAC and provide a shared LACP MAC address if desired.
+Click OK.
+
+Step 2: Assign Physical Ports to the Aggregate Group (ae1)
+Now you need to bind the physical firewall interfaces (ethernet1/3 and ethernet1/5) into ae1:
+In the Network > Interfaces menu on the left, click on Ethernet.
+Click on ethernet1/3 (which connects to ArubaCX3 port 1/1/1 in your topology):
+Interface Type: Change to Aggregate-Group.
+Aggregate Group: Select ae1 from the dropdown menu.
+Click OK.
+Click on ethernet1/5 (which connects to ArubaCX7 port 1/1/1 in your topology):
+Interface Type: Change to Aggregate-Group.
+Aggregate Group: Select ae1 from the dropdown menu.
+Click OK.
+
+Step 3: Create Subinterfaces for VLAN 10 and VLAN 20 (ae1.10 and ae1.20)
+Since inter-VLAN traffic between VLAN 10 (Win5) and VLAN 20 (Win) must now route through the firewall, you need to create subinterfaces:
+Back in Network > Interfaces > Ethernet, click on the ae1 link you created in Step 1.
+Go to the Subinterfaces tab at the top of that window.
+Click Add:
+Interface Name: Type ae1.10.
+Tag: Type 10 (this matches VLAN 10).
+Comment: Gateway-for-VLAN10-Client
+Go to the Config tab for ae1.10:
+Virtual Router: Select default.
+Security Zone: Select your Inside zone (or create/select an internal user zone).
+Go to the IPv4 tab for ae1.10:
+Click Add and enter the gateway IP for VLAN 10 (e.g., 10.10.10.254/24).
+Click OK.
+Repeat the exact same process to create ae1.20:
+Interface Name: ae1.20
+Tag: 20
+Virtual Router: default
+Security Zone: Inside
+IPv4 Address: Enter the gateway IP for VLAN 20 (e.g., 20.20.20.254/24).
+Click OK.
+
+Step 4: Assign Interfaces to the Virtual Router & Zones
+Go to Network > Virtual Routers > default.
+Under the Interface section, make sure both ae1.10 and ae1.20 are added as members. (Your external WAN interface, such as ethernet1/4, should also be in this virtual router along with your static default route 0.0.0.0/0 pointing to the ISP).
+Go to Network > Zones:
+Open your Inside zone and ensure ae1.10 and ae1.20 are both listed as member interfaces.
+
+Step 5: Commit Your Changes
+Click Commit in the top-right corner of the Palo Alto GUI.
+Review the changes and click Commit again to push the configuration to the firewall plane.
+Once committed, the firewall will successfully negotiate LACP (ae1) across both Aruba switches, accept trunked packets tagged with VLAN 10 and VLAN 20, and act as the core gateway for your client subnets!
